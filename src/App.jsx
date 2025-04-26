@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from './supabase';
+import emailjs from '@emailjs/browser';
 
 export default function Home() {
   const [formData, setFormData] = useState({ name: '', email: '', projectType: '', message: '' });
@@ -12,17 +13,37 @@ export default function Home() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     const { name, email, projectType, message } = formData;
-  
+
     const { error } = await supabase
       .from('quotes')
       .insert([{ name, email, project_type: projectType, message }]);
-  
+
     if (error) {
       console.error('Submission error:', error);
       alert('Something went wrong. Please try again.');
     } else {
+    
+      const templateParams = {
+        user_name: name,
+        user_email: email,
+        project_type: projectType,
+        message: message,
+      };
+
+      try {
+        await emailjs.send(
+          'service_w7x991i',     
+          'template_jjdziyg',   
+          templateParams,
+          'UdwQn1MmdirvUF1QB'        
+        );
+        console.log('Admin email sent!');
+      } catch (emailError) {
+        console.error('Failed to send email:', emailError);
+      }
+
       setSubmitted(true);
       setFormData({ name: '', email: '', projectType: '', message: '' });
     }
