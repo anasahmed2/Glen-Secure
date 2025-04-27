@@ -1,32 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from './supabase'; 
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
-  const [users, setUsers] = useState([]); // store dummy registered users
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
 
     if (isLogin) {
-      const userExists = users.find((u) => u.email === email && u.password === password);
-      if (userExists) {
+      // 🔥 LOGIN: Fetch user from Supabase
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .eq('password', password)
+        .single();
+
+      if (data) {
         setMessage('Logged in successfully!');
-        navigate('/app'); // instantly redirect to App.jsx route
+        navigate('/app');
       } else {
         setMessage('Invalid credentials.');
       }
     } else {
-      const alreadyExists = users.find((u) => u.email === email);
-      if (alreadyExists) {
-        setMessage('User already registered.');
+      // 🔥 REGISTER: Insert user into Supabase
+      const { error } = await supabase
+        .from('users')
+        .insert([{ email, password }]);
+
+      if (error) {
+        console.error('Registration error:', error);
+        setMessage('Registration failed.');
       } else {
-        setUsers([...users, { email, password }]);
         setMessage('Registered successfully! You can now log in.');
         setIsLogin(true);
       }
@@ -74,13 +85,6 @@ export default function AuthPage() {
             required
           />
 
-          <div className="flex items-center justify-between text-sm">
-            <label className="flex items-center">
-              <input type="checkbox" className="mr-2" /> Remember me for 30 days
-            </label>
-            <a href="#" className="text-blue-600 hover:underline">Forgot password?</a>
-          </div>
-
           <button type="submit" className="w-full bg-red-600 text-white py-2 rounded-lg hover:bg-red-700">
             {isLogin ? 'Sign in' : 'Register'}
           </button>
@@ -95,3 +99,4 @@ export default function AuthPage() {
     </div>
   );
 }
+
